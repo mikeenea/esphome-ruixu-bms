@@ -85,17 +85,17 @@ seplos_bms:
     address: 0x00 # master BMS
     protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
     seplos_modbus_id: modbus0
-    update_interval: 6s
+    update_interval: 4.5s # it seems that offsetting these intervals helps with making sure all 3 battery requests dont interfere with eachother. 
   - id: bms1
     address: 0x01 # slave #1
     protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
     seplos_modbus_id: modbus0
-    update_interval: 6s
+    update_interval: 5s
   - id: bms2
     address: 0x02 # slave #2
     protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
     seplos_modbus_id: modbus0
-    update_interval: 6s
+    update_interval: 5.5s
 
 
 binary_sensor:
