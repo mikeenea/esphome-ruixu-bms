@@ -22,8 +22,8 @@ external_components:
   - source: ${external_components_source}
     refresh: 0s
 
-#preferences:
-#  flash_write_interval: 24h
+preferences:
+  flash_write_interval: 24h # prevent the flash from wearing out 
 
 esp32:
   board: esp32-s3-devkitc-1 # m5stack-atoms3 #hardware is M5stack Atom S3 Lite with Atomic RS485 base - but the closest define with this version of platformio is the esp32-s3-devkitc-1
@@ -112,21 +112,21 @@ text_sensor:
 sensor:
 
   # these sensors calcualte kWh (energy) and are very useful - the separate IN / OUT sensors are necessary for the HA default power monitoring and the https://github.com/slipx06/sunsynk-power-flow-card which is highly recommended
-  - { power_id: batt_0_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name:  "batt 0 daily energy net", restore: false}
-  - { power_id: batt_0_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name:  "batt 0 daily energy in", restore: false}
-  - { power_id: batt_0_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name:  "batt 0 daily energy out", restore: false}      
+  - { power_id: batt_0_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name:  "batt 0 daily energy net"}
+  - { power_id: batt_0_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name:  "batt 0 daily energy in"}
+  - { power_id: batt_0_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name:  "batt 0 daily energy out"}      
 
-  - { power_id: batt_1_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_net_energy_net, name:  "batt 1 daily energy net", restore: false}
-  - { power_id: batt_1_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_in, name:  "batt 1 daily energy in", restore: false}
-  - { power_id: batt_1_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_out, name:  "batt 1 daily energy out", restore: false}        
+  - { power_id: batt_1_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_net_energy_net, name:  "batt 1 daily energy net"}
+  - { power_id: batt_1_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_in, name:  "batt 1 daily energy in"}
+  - { power_id: batt_1_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_out, name:  "batt 1 daily energy out"}        
 
-  - { power_id: batt_2_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_net, name:  "batt 2 daily energy net", restore: false}
-  - { power_id: batt_2_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_in, name:  "batt 2 daily energy in", restore: false}
-  - { power_id: batt_2_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_out, name:  "batt 2 daily energy out", restore: false}      
+  - { power_id: batt_2_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_net, name:  "batt 2 daily energy net"}
+  - { power_id: batt_2_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_in, name:  "batt 2 daily energy in"}
+  - { power_id: batt_2_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_out, name:  "batt 2 daily energy out"}      
 
-  - { power_id: bank_net_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_net, name:  "bank daily energy net", restore: false}
-  - { power_id: bank_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_in, name:  "bank daily energy in", restore: false}
-  - { power_id: bank_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_out, name:  "bank daily energy out", restore: false}
+  - { power_id: bank_net_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_net, name:  "bank daily energy net"}
+  - { power_id: bank_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_in, name:  "bank daily energy in"}
+  - { power_id: bank_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_out, name:  "bank daily energy out"}
 
 
   # these combine all 3x batteries into one sensor - if you have more batteries or less you will have to adjust everything to match 
