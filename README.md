@@ -1,3 +1,39 @@
+# Ruixu changes
+
+![Screenshot 2024-09-19 114359](https://github.com/user-attachments/assets/ea822be3-417e-490c-8183-b6bbc3ccd5fa)
+![Screenshot 2024-09-20 082150](https://github.com/user-attachments/assets/6daf8db2-ffa2-4d8c-a2d0-6f54777ec8dc)
+![Screenshot 2024-09-20 082053](https://github.com/user-attachments/assets/2ba57e48-41db-478d-aec3-f01ff8b5f23f)
+
+Connect to the LINK OUT port only - I used pins 7 / 8 - connect the green GND pair to the RS485 GND connection point
+
+![Screenshot 2024-09-20 100034](https://github.com/user-attachments/assets/95d44375-aad9-4864-b88f-39d03d8e03a1)
+
+
+Connect the two middle CAN pair (blue) to your inverter BMS CAN port - keep the Green pair connected
+
+
+![Screenshot 2024-09-20 095856](https://github.com/user-attachments/assets/2d0cd401-c811-4fda-9d35-396ce6ae4522)
+
+
+![PXL_20240919_003338818 (Medium)](https://github.com/user-attachments/assets/2c440124-a615-4b3d-b4ce-2dbe3245321c)
+
+White Brown: A
+
+Brown: B
+
+Green Pair: GND
+![PXL_20240919_003403359 (Medium)](https://github.com/user-attachments/assets/7986ef5f-b4ff-45ed-808d-0f87c804f068)
+
+
+
+
+
+
+
+
+
+
+
 # esphome-seplos-bms
 
 ESPHome component to monitor Seplos BMS via UART or RS485
