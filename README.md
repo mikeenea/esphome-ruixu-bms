@@ -2,6 +2,14 @@
 
 Example YAML with 3x batteries: https://github.com/easybotics/esphome-ruixu-bms/blob/main/esp32-s3-ruixu-multiple-example.yaml
 
+Hardware used:
+* M5Stack ESP32 S3 Lite: https://docs.m5stack.com/en/core/AtomS3%20Lite
+* Same on Digikey: https://www.digikey.com/en/products/detail/m5stack-technology-co-ltd/c124/18070571
+
+* M5Stack RS485 Isolated Transceiver: https://docs.m5stack.com/en/unit/iso485
+* Same on Digikey: https://www.digikey.com/en/products/detail/m5stack-technology-co-ltd/u094/13913913
+
+
 ![Screenshot 2024-09-19 114359](https://github.com/user-attachments/assets/ea822be3-417e-490c-8183-b6bbc3ccd5fa)
 ![Screenshot 2024-09-20 082150](https://github.com/user-attachments/assets/6daf8db2-ffa2-4d8c-a2d0-6f54777ec8dc)
 ![Screenshot 2024-09-20 082053](https://github.com/user-attachments/assets/2ba57e48-41db-478d-aec3-f01ff8b5f23f)
