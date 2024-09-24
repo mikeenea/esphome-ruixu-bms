@@ -171,8 +171,9 @@ Green Pair: GND
 
 ![PXL_20240919_003403359 (Medium)](https://github.com/user-attachments/assets/7986ef5f-b4ff-45ed-808d-0f87c804f068)
 
+Cell voltage Max / Min getting closer over multiple cycles :) showing the balancing is doing something! 
 
-
+![image](https://github.com/user-attachments/assets/8b6b54d3-a771-4289-ad78-cf58c770635a)
 
 
 
