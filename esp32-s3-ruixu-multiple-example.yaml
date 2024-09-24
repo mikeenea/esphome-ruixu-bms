@@ -1,6 +1,6 @@
 substitutions:
   name: bms
-  friendly_name: bms
+  friendly_name: bms # this will be appended before the entitiy names as per newer ESPhome standard - leave "bms" to work with my dashboards by default
   batt_0: "batt 0"
   batt_1: "batt 1"
   batt_2: "batt 2"
