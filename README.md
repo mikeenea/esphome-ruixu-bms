@@ -9,6 +9,143 @@ Hardware used:
 * M5Stack RS485 Isolated Transceiver: https://docs.m5stack.com/en/unit/iso485
 * Same on Digikey: https://www.digikey.com/en/products/detail/m5stack-technology-co-ltd/u094/13913913
 
+![image](https://github.com/user-attachments/assets/0db5d84c-af54-481e-a879-0a90579338a6)
+
+```
+type: entities
+entities:
+  - entity: sensor.bms_batt_3_state_of_charge
+    name: SOC %
+    state_header: batt 3
+    type: custom:multiple-entity-row
+    styles:
+      width: 40px
+    hide: true
+    unit: false
+    entities:
+      - entity: sensor.bms_batt_0_state_of_charge
+        name: batt 0
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_1_state_of_charge
+        name: batt 1
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_2_state_of_charge
+        name: batt 2
+        unit: false
+        styles:
+          width: 40px
+  - entity: sensor.bms_batt_3_voltage_total
+    name: Voltage Total V
+    state_header: batt 3
+    type: custom:multiple-entity-row
+    styles:
+      width: 40px
+    unit: false
+    entities:
+      - entity: sensor.bms_batt_0_voltage_total
+        name: batt 0
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_1_voltage_total
+        name: batt 1
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_2_voltage_total
+        name: batt 2
+        unit: false
+        styles:
+          width: 40px
+  - entity: sensor.bms_batt_3_power_net
+    name: Power kW
+    state_header: batt 3
+    type: custom:multiple-entity-row
+    styles:
+      width: 40px
+    unit: false
+    entities:
+      - entity: sensor.bms_bank_power_net
+        name: total
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_0_power_net
+        name: batt 0
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_1_power_net
+        name: batt 1
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_2_power_net
+        name: batt 2
+        unit: false
+        styles:
+          width: 40px
+  - entity: sensor.bms_batt_3_current
+    name: Current A
+    state_header: batt 3
+    type: custom:multiple-entity-row
+    styles:
+      width: 40px
+    unit: false
+    entities:
+      - entity: sensor.bms_bank_current
+        name: total
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_0_current
+        name: batt 0
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_1_current
+        name: batt 1
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_2_current
+        name: batt 2
+        unit: false
+        styles:
+          width: 40px
+  - entity: sensor.bms_batt_3_voltage_cell_max
+    name: Cell Max V
+    state_header: batt 3
+    type: custom:multiple-entity-row
+    styles:
+      width: 40px
+    unit: false
+    entities:
+      - entity: sensor.bms_bank_voltage_cell_max
+        name: max
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_0_voltage_cell_max
+        name: batt 0
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_1_voltage_cell_max
+        name: batt 1
+        unit: false
+        styles:
+          width: 40px
+      - entity: sensor.bms_batt_2_voltage_cell_max
+        name: batt 2
+        unit: false
+        styles:
+          width: 40px
+```
 
 ![Screenshot 2024-09-19 114359](https://github.com/user-attachments/assets/ea822be3-417e-490c-8183-b6bbc3ccd5fa)
 ![Screenshot 2024-09-20 082150](https://github.com/user-attachments/assets/6daf8db2-ffa2-4d8c-a2d0-6f54777ec8dc)
