@@ -201,7 +201,7 @@ sensor:
       - source: batt_3_voltage_cell_max
 
   - platform: combination
-    type: max
+    type: min
     name: "bank voltage cell min"
     id: bank_min_cell_voltage
     sources:
