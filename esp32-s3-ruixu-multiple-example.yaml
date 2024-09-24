@@ -1,9 +1,10 @@
 substitutions:
-  name: ruixu
-  friendly_name: ruixu # this will be appended before the entitiy names as per newer ESPhome standard
+  name: bms
+  friendly_name: bms
   batt_0: "batt 0"
   batt_1: "batt 1"
   batt_2: "batt 2"
+  batt_3: "batt 3"
   device_description: "Monitor and control a Ruixu BMS via RS485 (Modbus) with M5Stack Atomic ESP32 S3 lite"
   tx_pin: GPIO2   # M5stack Atom S3 + Atomic RS485 base = GPIO6 | Isolated RS485 Grove module = GPIO2
   rx_pin: GPIO1   # M5stack Atom S3 + Atomic RS485 base = GPIO5 | Isolated RS485 Grove module = GPIO1
@@ -96,6 +97,11 @@ seplos_bms:
     protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
     seplos_modbus_id: modbus0
     update_interval: 5.5s
+  - id: bms2
+    address: 0x02 # slave #3
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 5.9s
 
 
 binary_sensor:
@@ -112,50 +118,57 @@ text_sensor:
 sensor:
 
   # these sensors calcualte kWh (energy) and are very useful - the separate IN / OUT sensors are necessary for the HA default power monitoring and the https://github.com/slipx06/sunsynk-power-flow-card which is highly recommended
-  - { power_id: batt_0_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name:  "batt 0 daily energy net"}
-  - { power_id: batt_0_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name:  "batt 0 daily energy in"}
-  - { power_id: batt_0_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name:  "batt 0 daily energy out"}      
+  - { power_id: batt_0_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name: "${batt_0} daily energy net"}
+  - { power_id: batt_0_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name: "${batt_0} daily energy in"}
+  - { power_id: batt_0_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name: "${batt_0} daily energy out"}      
 
-  - { power_id: batt_1_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_net_energy_net, name:  "batt 1 daily energy net"}
-  - { power_id: batt_1_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_in, name:  "batt 1 daily energy in"}
-  - { power_id: batt_1_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_out, name:  "batt 1 daily energy out"}        
+  - { power_id: batt_1_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_net_energy_net, name: "${batt_1} daily energy net"}
+  - { power_id: batt_1_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_in, name: "${batt_1} daily energy in"}
+  - { power_id: batt_1_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_out, name: "${batt_1} daily energy out"}        
 
-  - { power_id: batt_2_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_net, name:  "batt 2 daily energy net"}
-  - { power_id: batt_2_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_in, name:  "batt 2 daily energy in"}
-  - { power_id: batt_2_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_out, name:  "batt 2 daily energy out"}      
+  - { power_id: batt_2_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_net, name:  "${batt_2} daily energy net"}
+  - { power_id: batt_2_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_in, name: "${batt_2} daily energy in"}
+  - { power_id: batt_2_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_out, name: "${batt_2} daily energy out"}      
 
-  - { power_id: bank_net_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_net, name:  "bank daily energy net"}
-  - { power_id: bank_in_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_in, name:  "bank daily energy in"}
-  - { power_id: bank_out_power, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_out, name:  "bank daily energy out"}
+  - { power_id: batt_3_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_net, name: "${batt_3} daily energy net"}
+  - { power_id: batt_3_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_in, name: "${batt_3} daily energy in"}
+  - { power_id: batt_3_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_out, name: "${batt_3} daily energy out"}   
+
+  - { power_id: bank_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_net, name: "bank daily energy net"}
+  - { power_id: bank_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_in, name: "bank daily energy in"}
+  - { power_id: bank_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_out, name: "bank daily energy out"}
 
 
-  # these combine all 3x batteries into one sensor - if you have more batteries or less you will have to adjust everything to match 
+  # these combine all _x batteries into one sensor - if you have more batteries or less you will have to adjust everything to match 
   - platform: combination
     type: sum
-    name: "bank power"
-    id: bank_net_power
+    name: "bank power net"
+    id: bank_power_net
     sources:
-      - source: batt_0_power
-      - source: batt_1_power
-      - source: batt_2_power
+      - source: batt_0_power_net
+      - source: batt_1_power_net
+      - source: batt_2_power_net
+      - source: batt_3_power_net
 
   - platform: combination
     type: sum
     name: "bank power in"
-    id: bank_in_power
+    id: bank_power_in
     sources:
-      - source: batt_0_in_power
-      - source: batt_1_in_power
-      - source: batt_2_in_power
+      - source: batt_0_power_in
+      - source: batt_1_power_in
+      - source: batt_2_power_in
+      - source: batt_3_power_in
 
   - platform: combination
     type: sum
     name: "bank power out"
-    id: bank_out_power
+    id: bank_power_out
     sources:
-      - source: batt_0_out_power
-      - source: batt_1_out_power
-      - source: batt_2_out_power
+      - source: batt_0_power_out
+      - source: batt_1_power_out
+      - source: batt_2_power_out
+      - source: batt_3_power_out
 
   - platform: combination
     type: sum
@@ -165,6 +178,7 @@ sensor:
       - source: batt_0_current
       - source: batt_1_current
       - source: batt_2_current
+      - source: batt_3_current
 
   - platform: combination
     type: mean
@@ -174,6 +188,7 @@ sensor:
       - source: batt_0_voltage_total
       - source: batt_1_voltage_total
       - source: batt_2_voltage_total
+      - source: batt_3_voltage_total
 
   - platform: combination
     type: max
@@ -183,6 +198,7 @@ sensor:
       - source: batt_0_voltage_cell_max
       - source: batt_1_voltage_cell_max
       - source: batt_2_voltage_cell_max
+      - source: batt_3_voltage_cell_max
 
   - platform: combination
     type: max
@@ -192,6 +208,7 @@ sensor:
       - source: batt_0_voltage_cell_min
       - source: batt_1_voltage_cell_min
       - source: batt_2_voltage_cell_min
+      - source: batt_3_voltage_cell_min
 
 
 # you will need one of these sections for each battery you have - copy this into notepad++ or some other text editor and do a "find and replace" on the batt_0 to your new value "batt_3" and then paste that in at the end to add another battery
@@ -267,22 +284,22 @@ sensor:
       name: "${batt_0} current"
       id: batt_0_current
     power:
-      name: "${batt_0} power"
-      id: batt_0_power
+      name: "${batt_0} power net"
+      id: batt_0_power_net
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     charging_power:
-      name: "${batt_0} power charging"
-      id: batt_0_in_power
+      name: "${batt_0} power in"
+      id: batt_0_power_in
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     discharging_power:
-      name: "${batt_0} power discharging"
-      id: batt_0_out_power
+      name: "${batt_0} power out"
+      id: batt_0_power_out
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
@@ -369,22 +386,22 @@ sensor:
       name: "${batt_1} current"
       id: batt_1_current
     power:
-      name: "${batt_1} power"
-      id: batt_1_power
+      name: "${batt_1} power net"
+      id: batt_1_power_net
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     charging_power:
-      name: "${batt_1} power charging"
-      id: batt_1_in_power
+      name: "${batt_1} power in"
+      id: batt_1_power_in
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     discharging_power:
-      name: "${batt_1} power discharging"
-      id: batt_1_out_power
+      name: "${batt_1} power out"
+      id: batt_1_power_out
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
@@ -471,22 +488,22 @@ sensor:
       name: "${batt_2} current"
       id: batt_2_current
     power:
-      name: "${batt_2} power"
-      id: batt_2_power
+      name: "${batt_2} power net"
+      id: batt_2_power_net
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     charging_power:
-      name: "${batt_2} power charging"
-      id: batt_2_in_power
+      name: "${batt_2} power in"
+      id: batt_2_power_in
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
       accuracy_decimals: 3
     discharging_power:
-      name: "${batt_2} power discharging"
-      id: batt_2_out_power
+      name: "${batt_2} power out"
+      id: batt_2_power_out
       filters: 
         - multiply: 0.001 # Multiplication factor from W to kW is 0.001
       unit_of_measurement: 'kW'
@@ -502,8 +519,107 @@ sensor:
     state_of_health:
       name: "${batt_2} state of health"
 
-
-
+  - platform: seplos_bms #################################### batt_3 ###################################
+    seplos_bms_id: bms3
+    min_cell_voltage:
+      name: "${batt_3} voltage cell min"
+      id: batt_3_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_3} voltage cell max"
+      id: batt_3_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_3} voltage cell min number"
+      id: batt_3_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_3} voltage cell max number"
+      id: batt_3_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_3} voltage cell delta"
+      id: batt_3_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_3} voltage cell average"
+      id: batt_3_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_3} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_3} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_3} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_3} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_3} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_3} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_3} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_3} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_3} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_3} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_3} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_3} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_3} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_3} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_3} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_3} voltage cell 16"
+    temperature_1:
+      name: "${batt_3} temperature 1"
+    temperature_2:
+      name: "${batt_3} temperature 2"
+    temperature_3:
+      name: "${batt_3} temperature 3"
+    temperature_4:
+      name: "${batt_3} temperature 4"
+    temperature_5:
+      name: "${batt_3} temperature environment"
+    temperature_6:
+      name: "${batt_3} temperature mosfet"
+    total_voltage:
+      name: "${batt_3} voltage total"
+      id: batt_3_voltage_total
+    current:
+      name: "${batt_3} current"
+      id: batt_3_current
+    power:
+      name: "${batt_3} power net"
+      id: batt_3_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_3} power in"
+      id: batt_3_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_3} power out"
+      id: batt_3_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_3} remaining capacity"
+    battery_capacity:
+      name: "${batt_3} battery capacity"
+    state_of_charge:
+      name: "${batt_3} state of charge"
+    charging_cycles:
+      name: "${batt_3} charging cycles"
+    state_of_health:
+      name: "${batt_3} state of health"
 
 
   #######################################################################    OLD REVERSE ENGINEERING DATA - left for posterity    ###############################################
