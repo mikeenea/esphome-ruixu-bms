@@ -1,6 +1,6 @@
 substitutions:
   name: bms
-  friendly_name: bms
+  friendly_name: bms # this will be appended before the entitiy names as per newer ESPhome standard - leave "bms" to work with my dashboards by default
   batt_0: "batt 0"
   device_description: "Monitor and control a Ruixu BMS via RS485 (Modbus) with M5Stack Atomic ESP32 S3 lite"
   tx_pin: GPIO2   # M5stack Atom S3 + Atomic RS485 base = GPIO6 | Isolated RS485 Grove module = GPIO2
