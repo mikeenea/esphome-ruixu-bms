@@ -1,8 +1,10 @@
 substitutions:
-  name: ruixu-bms
+  name: bms
+  friendly_name: bms
+  batt_0: "batt 0"
   device_description: "Monitor and control a Ruixu BMS via RS485 (Modbus) with M5Stack Atomic ESP32 S3 lite"
-  tx_pin: GPIO6
-  rx_pin: GPIO5
+  tx_pin: GPIO2   # M5stack Atom S3 + Atomic RS485 base = GPIO6 | Isolated RS485 Grove module = GPIO2
+  rx_pin: GPIO1   # M5stack Atom S3 + Atomic RS485 base = GPIO5 | Isolated RS485 Grove module = GPIO1
   external_components_source: github://easybotics/esphome-ruixu-bms@main
 
 esphome:
@@ -17,21 +19,19 @@ external_components:
   - source: ${external_components_source}
     refresh: 0s
 
+preferences:
+  flash_write_interval: 24h # prevent the flash from wearing out 
+
 esp32:
-  board: m5stack-atoms3 #hardware is M5stack Atom S3 Lite with Atomic RS485 base
+  board: esp32-s3-devkitc-1 # m5stack-atoms3 #hardware is M5stack Atom S3 Lite with Atomic RS485 base - but the closest define with this version of platformio is the esp32-s3-devkitc-1
   variant: esp32s3
   framework:
-    type: esp-idf
-    version: 5.3.1
-    platform_version: 6.8.1
-#    wifi was not reliable with older or recommended platformio / esp-idf - maybe a power issue?? 
-#    version: 5.0.2
-#    platform_version: 6.3.2
+    type: arduino
     
 # Enable logging
 logger:
   #level: VERBOSE
-  baud_rate: 921600 # needed to be faster to not miss some response logs 
+  baud_rate: 921600 # faster logging 
 
 # Enable Home Assistant API
 api:
@@ -74,96 +74,136 @@ seplos_modbus:
   uart_id: uart_0
   rx_timeout: 150ms
 
+# RS485 transceiver should only be connected to the master BMS OUT port - the same one going to the inverter - it will not work correctly on any other battery or port!! 
+# the master battery CAN lines (middle pair) go to the inverter - the last pair (brown) go to the RS485 transceiver
+# it will NOT work correclty on the extra port on the last slave battery. 
+# the Ruixu BMS seems sensitive to when the data is sent - if the logs show only 1 battery data being received try adjusting the interval or just restarting the ESP32
 seplos_bms:
-  id: bms0
-  # Dip switch configuration of a single pack setup / address 0x0
-  #  8    7    6    5    4    3    2    1
-  # off, off, off, off, off, off, off, off
-  address: 0x00
-  # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
-  protocol_version: 0x21
-  seplos_modbus_id: modbus0
-  update_interval: 10s
+  - id: bms0 
+    address: 0x00 # master BMS
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 5s # it seems that offsetting these intervals helps with making sure all battery requests dont interfere with eachother if using multiple. 
+
+binary_sensor:
+  - platform: status # exposes the node state in HA
+    name: "Node Status"
+    id: system_status
+
+text_sensor:
+  - platform: wifi_info # exposes the node IP in HA
+    ip_address:
+      name: ESP IP Address
+      id: ip_address
 
 sensor:
 
-  - platform: seplos_bms
+  # these sensors calcualte kWh (energy) and are very useful - the separate IN / OUT sensors are necessary for the HA default power monitoring and the https://github.com/slipx06/sunsynk-power-flow-card which is highly recommended
+  - { power_id: batt_0_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name: "${batt_0} daily energy net"}
+  - { power_id: batt_0_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name: "${batt_0} daily energy in"}
+  - { power_id: batt_0_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name: "${batt_0} daily energy out"}      
+
+- platform: seplos_bms #################################### batt_0 ###################################
+    seplos_bms_id: bms0
     min_cell_voltage:
-      name: "${name} min cell voltage"
+      name: "${batt_0} voltage cell min"
+      id: batt_0_voltage_cell_min
     max_cell_voltage:
-      name: "${name} max cell voltage"
+      name: "${batt_0} voltage cell max"
+      id: batt_0_voltage_cell_max
     min_voltage_cell:
-      name: "${name} min voltage cell"
+      name: "${batt_0} voltage cell min number"
+      id: batt_0_voltage_cell_min_number
     max_voltage_cell:
-      name: "${name} max voltage cell"
+      name: "${batt_0} voltage cell max number"
+      id: batt_0_voltage_cell_max_number
     delta_cell_voltage:
-      name: "${name} cell voltage delta"
+      name: "${batt_0} voltage cell delta"
+      id: batt_0_voltage_cell_delta
     average_cell_voltage:
-      name: "${name} cell voltage average"
+      name: "${batt_0} voltage cell average"
+      id: batt_0_voltage_cell_average
     cell_voltage_1:
-      name: "${name} cell voltage 1"
+      name: "${batt_0} voltage cell 1"
     cell_voltage_2:
-      name: "${name} cell voltage 2"
+      name: "${batt_0} voltage cell 2"
     cell_voltage_3:
-      name: "${name} cell voltage 3"
+      name: "${batt_0} voltage cell 3"
     cell_voltage_4:
-      name: "${name} cell voltage 4"
+      name: "${batt_0} voltage cell 4"
     cell_voltage_5:
-      name: "${name} cell voltage 5"
+      name: "${batt_0} voltage cell 5"
     cell_voltage_6:
-      name: "${name} cell voltage 6"
+      name: "${batt_0} voltage cell 6"
     cell_voltage_7:
-      name: "${name} cell voltage 7"
+      name: "${batt_0} voltage cell 7"
     cell_voltage_8:
-      name: "${name} cell voltage 8"
+      name: "${batt_0} voltage cell 8"
     cell_voltage_9:
-      name: "${name} cell voltage 9"
+      name: "${batt_0} voltage cell 9"
     cell_voltage_10:
-      name: "${name} cell voltage 10"
+      name: "${batt_0} voltage cell 10"
     cell_voltage_11:
-      name: "${name} cell voltage 11"
+      name: "${batt_0} voltage cell 11"
     cell_voltage_12:
-      name: "${name} cell voltage 12"
+      name: "${batt_0} voltage cell 12"
     cell_voltage_13:
-      name: "${name} cell voltage 13"
+      name: "${batt_0} voltage cell 13"
     cell_voltage_14:
-      name: "${name} cell voltage 14"
+      name: "${batt_0} voltage cell 14"
     cell_voltage_15:
-      name: "${name} cell voltage 15"
+      name: "${batt_0} voltage cell 15"
     cell_voltage_16:
-      name: "${name} cell voltage 16"
+      name: "${batt_0} voltage cell 16"
     temperature_1:
-      name: "${name} temperature 1"
+      name: "${batt_0} temperature 1"
     temperature_2:
-      name: "${name} temperature 2"
+      name: "${batt_0} temperature 2"
     temperature_3:
-      name: "${name} temperature 3"
+      name: "${batt_0} temperature 3"
     temperature_4:
-      name: "${name} temperature 4"
+      name: "${batt_0} temperature 4"
     temperature_5:
-      name: "${name} temperature environment"
+      name: "${batt_0} temperature environment"
     temperature_6:
-      name: "${name} temperature mosfet"
+      name: "${batt_0} temperature mosfet"
     total_voltage:
-      name: "${name} voltage total"
+      name: "${batt_0} voltage total"
+      id: batt_0_voltage_total
     current:
-      name: "${name} current"
+      name: "${batt_0} current"
+      id: batt_0_current
     power:
-      name: "${name} power"
+      name: "${batt_0} power net"
+      id: batt_0_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
     charging_power:
-      name: "${name} power charging"
+      name: "${batt_0} power in"
+      id: batt_0_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
     discharging_power:
-      name: "${name} power discharging"
+      name: "${batt_0} power out"
+      id: batt_0_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
     residual_capacity:
-      name: "${name} remaining capacity"
+      name: "${batt_0} remaining capacity"
     battery_capacity:
-      name: "${name} battery capacity"
+      name: "${batt_0} battery capacity"
     state_of_charge:
-      name: "${name} state of charge"
+      name: "${batt_0} state of charge"
     charging_cycles:
-      name: "${name} charging cycles"
+      name: "${batt_0} charging cycles"
     state_of_health:
-      name: "${name} state of health"
+      name: "${batt_0} state of health"
 
 
       # Ruixu Battery Testing 
