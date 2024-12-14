@@ -1,0 +1,748 @@
+substitutions:
+  name: bms
+  friendly_name: bms # this will be appended before the entitiy names as per newer ESPhome standard - leave "bms" to work with my dashboards by default
+  batt_0: "batt 0"
+  batt_1: "batt 1"
+  batt_2: "batt 2"
+  batt_3: "batt 3"
+  batt_4: "batt 4"
+  device_description: "Monitor and control a Ruixu BMS via RS485 (Modbus) with M5Stack Atomic ESP32 S3 lite"
+  tx_pin: GPIO2   # M5stack Atom S3 + Atomic RS485 base = GPIO6 | Isolated RS485 Grove module = GPIO2
+  rx_pin: GPIO1   # M5stack Atom S3 + Atomic RS485 base = GPIO5 | Isolated RS485 Grove module = GPIO1
+  external_components_source: github://mikeenea/esphome-ruixu-bms@main
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: ${device_description}
+  min_version: 2024.6.0
+  project:
+    name: "syssi.esphome-seplos-bms"
+    version: 1.2.0
+
+external_components:
+  - source: ${external_components_source}
+    refresh: 0s
+
+esp32:
+  board: esp32-s3-devkitc-1 # m5stack-atoms3 #hardware is M5stack Atom S3 Lite with Atomic RS485 base - but the closest define with this version of platformio is the esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  #level: VERBOSE
+  baud_rate: 921600 # faster logging 
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "5n7+GZ/irqi4o/HkXPttE1AN5DTWEF/35fcsxCtdfs4="
+
+ota:
+  - platform: esphome
+    password: "1292860bf8bcf0fe1e50e11aa9144a8c"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time 
+
+uart:
+  - id: uart_0
+    baud_rate: 9600
+    tx_pin: ${tx_pin}
+    rx_pin: ${rx_pin}
+    #debug:
+    #  direction: BOTH
+    #  dummy_receiver: false
+    #  after:
+    #    delimiter: "0x16"
+    #  sequence:
+    #    - lambda: |-
+    #        UARTDebug::log_string(direction, bytes);      // both of these data types are useful for debugging issues or reverse engineering protocols 
+    #        UARTDebug::log_hex(direction, bytes, ' ');    // cyber chef is also very nice https://gchq.github.io/CyberChef/#recipe=From_Base(16)Multiply('Line%20feed')From_Charcode('Space',16/disabled)&input=NkQ2MA
+
+
+seplos_modbus:
+  id: modbus0
+  uart_id: uart_0
+  rx_timeout: 150ms
+
+
+# RS485 transceiver should only be connected to the master BMS OUT port - the same one going to the inverter - it will not work correctly on any other battery or port!! 
+# the master battery CAN lines (middle pair) go to the inverter - the last pair (brown) go to the RS485 transceiver
+# it will NOT work correclty on the extra port on the last slave battery. 
+# the Ruixu BMS seems sensitive to when the data is sent - if the logs show only 1 battery data being received try adjusting the interval or just restarting the ESP32
+seplos_bms:
+  - id: bms0 
+    address: 0x00 # master BMS
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 4.5s # it seems that offsetting these intervals helps with making sure all 3 battery requests dont interfere with eachother. 
+  - id: bms1
+    address: 0x01 # slave #1
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 5s
+  - id: bms2
+    address: 0x02 # slave #2
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 5.5s
+  - id: bms3
+    address: 0x03 # slave #3
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 6.0s
+  - id: bms4
+    address: 0x04 # slave #4
+    protocol_version: 0x21 # Known protocol versions: 0x20 (Seplos), 0x26 (Boqiang), 0x21 (Ruixu)
+    seplos_modbus_id: modbus0
+    update_interval: 6.5s
+
+binary_sensor:
+  - platform: status # exposes the node state in HA
+    name: "Node Status"
+    id: system_status
+
+text_sensor:
+  - platform: wifi_info # exposes the node IP in HA
+    ip_address:
+      name: ESP IP Address
+      id: ip_address
+
+sensor:
+
+  # these sensors calcualte kWh (energy) and are very useful - the separate IN / OUT sensors are necessary for the HA default power monitoring and the https://github.com/slipx06/sunsynk-power-flow-card which is highly recommended
+  - { power_id: batt_0_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_net, name: "${batt_0} daily energy net"}
+  - { power_id: batt_0_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_in, name: "${batt_0} daily energy in"}
+  - { power_id: batt_0_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_0_energy_out, name: "${batt_0} daily energy out"}      
+
+  - { power_id: batt_1_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_net_energy_net, name: "${batt_1} daily energy net"}
+  - { power_id: batt_1_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_in, name: "${batt_1} daily energy in"}
+  - { power_id: batt_1_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_1_energy_out, name: "${batt_1} daily energy out"}        
+
+  - { power_id: batt_2_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_net, name:  "${batt_2} daily energy net"}
+  - { power_id: batt_2_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_in, name: "${batt_2} daily energy in"}
+  - { power_id: batt_2_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_2_energy_out, name: "${batt_2} daily energy out"}      
+
+  - { power_id: batt_3_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_net, name: "${batt_3} daily energy net"}
+  - { power_id: batt_3_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_in, name: "${batt_3} daily energy in"}
+  - { power_id: batt_3_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_3_energy_out, name: "${batt_3} daily energy out"}   
+
+  - { power_id: batt_4_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_4_energy_net, name: "${batt_4} daily energy net"}
+  - { power_id: batt_4_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_4_energy_in, name: "${batt_4} daily energy in"}
+  - { power_id: batt_4_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: batt_4_energy_out, name: "${batt_4} daily energy out"}
+
+  - { power_id: bank_power_net, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_net, name: "bank daily energy net"}
+  - { power_id: bank_power_in, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_in, name: "bank daily energy in"}
+  - { power_id: bank_power_out, platform: total_daily_energy, method: left, accuracy_decimals: 2, unit_of_measurement: 'kWh', id: bank_energy_out, name: "bank daily energy out"}
+
+
+  # these combine all _x batteries into one sensor - if you have more batteries or less you will have to adjust everything to match 
+  - platform: combination
+    type: sum
+    name: "bank power net"
+    id: bank_power_net
+    sources:
+      - source: batt_0_power_net
+      - source: batt_1_power_net
+      - source: batt_2_power_net
+      - source: batt_3_power_net
+      - source: batt_4_power_net
+
+  - platform: combination
+    type: sum
+    name: "bank power in"
+    id: bank_power_in
+    sources:
+      - source: batt_0_power_in
+      - source: batt_1_power_in
+      - source: batt_2_power_in
+      - source: batt_3_power_in
+      - source: batt_4_power_in
+
+  - platform: combination
+    type: sum
+    name: "bank power out"
+    id: bank_power_out
+    sources:
+      - source: batt_0_power_out
+      - source: batt_1_power_out
+      - source: batt_2_power_out
+      - source: batt_3_power_out
+      - source: batt_4_power_out
+
+  - platform: combination
+    type: sum
+    name: "bank current"
+    id: bank_net_current
+    sources:
+      - source: batt_0_current
+      - source: batt_1_current
+      - source: batt_2_current
+      - source: batt_3_current
+      - source: batt_4_current
+
+  - platform: combination
+    type: mean
+    name: "bank voltage mean"
+    id: bank_mean_voltage
+    sources:
+      - source: batt_0_voltage_total
+      - source: batt_1_voltage_total
+      - source: batt_2_voltage_total
+      - source: batt_3_voltage_total
+      - source: batt_4_voltage_total
+
+  - platform: combination
+    type: max
+    name: "bank voltage cell max"
+    id: bank_max_cell_voltage
+    sources:
+      - source: batt_0_voltage_cell_max
+      - source: batt_1_voltage_cell_max
+      - source: batt_2_voltage_cell_max
+      - source: batt_3_voltage_cell_max
+      - source: batt_4_voltage_cell_max
+
+  - platform: combination
+    type: min
+    name: "bank voltage cell min"
+    id: bank_min_cell_voltage
+    sources:
+      - source: batt_0_voltage_cell_min
+      - source: batt_1_voltage_cell_min
+      - source: batt_2_voltage_cell_min
+      - source: batt_3_voltage_cell_min
+      - source: batt_4_voltage_cell_min
+
+
+# you will need one of these sections for each battery you have - copy this into notepad++ or some other text editor and do a "find and replace" on the batt_0 to your new value "batt_3" and then paste that in at the end to add another battery
+
+  - platform: seplos_bms #################################### batt_0 ###################################
+    seplos_bms_id: bms0
+    min_cell_voltage:
+      name: "${batt_0} voltage cell min"
+      id: batt_0_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_0} voltage cell max"
+      id: batt_0_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_0} voltage cell min number"
+      id: batt_0_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_0} voltage cell max number"
+      id: batt_0_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_0} voltage cell delta"
+      id: batt_0_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_0} voltage cell average"
+      id: batt_0_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_0} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_0} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_0} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_0} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_0} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_0} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_0} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_0} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_0} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_0} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_0} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_0} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_0} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_0} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_0} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_0} voltage cell 16"
+    temperature_1:
+      name: "${batt_0} temperature 1"
+    temperature_2:
+      name: "${batt_0} temperature 2"
+    temperature_3:
+      name: "${batt_0} temperature 3"
+    temperature_4:
+      name: "${batt_0} temperature 4"
+    temperature_5:
+      name: "${batt_0} temperature environment"
+    temperature_6:
+      name: "${batt_0} temperature mosfet"
+    total_voltage:
+      name: "${batt_0} voltage total"
+      id: batt_0_voltage_total
+    current:
+      name: "${batt_0} current"
+      id: batt_0_current
+      filters: 
+        - multiply: 0.1 # Multiplication factor from RUIXU current to real current
+    power:
+      name: "${batt_0} power net"
+      id: batt_0_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_0} power in"
+      id: batt_0_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_0} power out"
+      id: batt_0_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_0} remaining capacity"
+    battery_capacity:
+      name: "${batt_0} battery capacity"
+    state_of_charge:
+      name: "${batt_0} state of charge"
+    charging_cycles:
+      name: "${batt_0} charging cycles"
+    state_of_health:
+      name: "${batt_0} state of health"
+
+  - platform: seplos_bms #################################### batt_1 ###################################
+    seplos_bms_id: bms1
+    min_cell_voltage:
+      name: "${batt_1} voltage cell min"
+      id: batt_1_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_1} voltage cell max"
+      id: batt_1_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_1} voltage cell min number"
+      id: batt_1_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_1} voltage cell max number"
+      id: batt_1_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_1} voltage cell delta"
+      id: batt_1_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_1} voltage cell average"
+      id: batt_1_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_1} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_1} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_1} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_1} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_1} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_1} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_1} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_1} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_1} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_1} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_1} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_1} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_1} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_1} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_1} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_1} voltage cell 16"
+    temperature_1:
+      name: "${batt_1} temperature 1"
+    temperature_2:
+      name: "${batt_1} temperature 2"
+    temperature_3:
+      name: "${batt_1} temperature 3"
+    temperature_4:
+      name: "${batt_1} temperature 4"
+    temperature_5:
+      name: "${batt_1} temperature environment"
+    temperature_6:
+      name: "${batt_1} temperature mosfet"
+    total_voltage:
+      name: "${batt_1} voltage total"
+      id: batt_1_voltage_total
+    current:
+      name: "${batt_1} current"
+      id: batt_1_current
+      filters: 
+        - multiply: 0.1 # Multiplication factor from RUIXU current to real current
+    power:
+      name: "${batt_1} power net"
+      id: batt_1_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_1} power in"
+      id: batt_1_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_1} power out"
+      id: batt_1_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_1} remaining capacity"
+    battery_capacity:
+      name: "${batt_1} battery capacity"
+    state_of_charge:
+      name: "${batt_1} state of charge"
+    charging_cycles:
+      name: "${batt_1} charging cycles"
+    state_of_health:
+      name: "${batt_1} state of health"
+
+  - platform: seplos_bms #################################### batt_2 ###################################
+    seplos_bms_id: bms2
+    min_cell_voltage:
+      name: "${batt_2} voltage cell min"
+      id: batt_2_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_2} voltage cell max"
+      id: batt_2_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_2} voltage cell min number"
+      id: batt_2_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_2} voltage cell max number"
+      id: batt_2_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_2} voltage cell delta"
+      id: batt_2_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_2} voltage cell average"
+      id: batt_2_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_2} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_2} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_2} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_2} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_2} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_2} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_2} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_2} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_2} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_2} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_2} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_2} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_2} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_2} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_2} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_2} voltage cell 16"
+    temperature_1:
+      name: "${batt_2} temperature 1"
+    temperature_2:
+      name: "${batt_2} temperature 2"
+    temperature_3:
+      name: "${batt_2} temperature 3"
+    temperature_4:
+      name: "${batt_2} temperature 4"
+    temperature_5:
+      name: "${batt_2} temperature environment"
+    temperature_6:
+      name: "${batt_2} temperature mosfet"
+    total_voltage:
+      name: "${batt_2} voltage total"
+      id: batt_2_voltage_total
+    current:
+      name: "${batt_2} current"
+      id: batt_2_current
+      filters: 
+        - multiply: 0.1 # Multiplication factor from RUIXU current to real current
+    power:
+      name: "${batt_2} power net"
+      id: batt_2_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_2} power in"
+      id: batt_2_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_2} power out"
+      id: batt_2_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_2} remaining capacity"
+    battery_capacity:
+      name: "${batt_2} battery capacity"
+    state_of_charge:
+      name: "${batt_2} state of charge"
+    charging_cycles:
+      name: "${batt_2} charging cycles"
+    state_of_health:
+      name: "${batt_2} state of health"
+
+  - platform: seplos_bms #################################### batt_3 ###################################
+    seplos_bms_id: bms3
+    min_cell_voltage:
+      name: "${batt_3} voltage cell min"
+      id: batt_3_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_3} voltage cell max"
+      id: batt_3_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_3} voltage cell min number"
+      id: batt_3_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_3} voltage cell max number"
+      id: batt_3_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_3} voltage cell delta"
+      id: batt_3_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_3} voltage cell average"
+      id: batt_3_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_3} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_3} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_3} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_3} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_3} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_3} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_3} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_3} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_3} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_3} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_3} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_3} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_3} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_3} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_3} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_3} voltage cell 16"
+    temperature_1:
+      name: "${batt_3} temperature 1"
+    temperature_2:
+      name: "${batt_3} temperature 2"
+    temperature_3:
+      name: "${batt_3} temperature 3"
+    temperature_4:
+      name: "${batt_3} temperature 4"
+    temperature_5:
+      name: "${batt_3} temperature environment"
+    temperature_6:
+      name: "${batt_3} temperature mosfet"
+    total_voltage:
+      name: "${batt_3} voltage total"
+      id: batt_3_voltage_total
+    current:
+      name: "${batt_3} current"
+      id: batt_3_current
+      filters: 
+        - multiply: 0.1 # Multiplication factor from RUIXU current to real current
+    power:
+      name: "${batt_3} power net"
+      id: batt_3_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_3} power in"
+      id: batt_3_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_3} power out"
+      id: batt_3_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_3} remaining capacity"
+    battery_capacity:
+      name: "${batt_3} battery capacity"
+    state_of_charge:
+      name: "${batt_3} state of charge"
+    charging_cycles:
+      name: "${batt_3} charging cycles"
+    state_of_health:
+      name: "${batt_3} state of health"
+ 
+ - platform: seplos_bms #################################### batt_4 ###################################
+    seplos_bms_id: bms4
+    min_cell_voltage:
+      name: "${batt_4} voltage cell min"
+      id: batt_4_voltage_cell_min
+    max_cell_voltage:
+      name: "${batt_4} voltage cell max"
+      id: batt_4_voltage_cell_max
+    min_voltage_cell:
+      name: "${batt_4} voltage cell min number"
+      id: batt_4_voltage_cell_min_number
+    max_voltage_cell:
+      name: "${batt_4} voltage cell max number"
+      id: batt_4_voltage_cell_max_number
+    delta_cell_voltage:
+      name: "${batt_4} voltage cell delta"
+      id: batt_4_voltage_cell_delta
+    average_cell_voltage:
+      name: "${batt_4} voltage cell average"
+      id: batt_4_voltage_cell_average
+    cell_voltage_1:
+      name: "${batt_4} voltage cell 1"
+    cell_voltage_2:
+      name: "${batt_4} voltage cell 2"
+    cell_voltage_3:
+      name: "${batt_4} voltage cell 3"
+    cell_voltage_4:
+      name: "${batt_4} voltage cell 4"
+    cell_voltage_5:
+      name: "${batt_4} voltage cell 5"
+    cell_voltage_6:
+      name: "${batt_4} voltage cell 6"
+    cell_voltage_7:
+      name: "${batt_4} voltage cell 7"
+    cell_voltage_8:
+      name: "${batt_4} voltage cell 8"
+    cell_voltage_9:
+      name: "${batt_4} voltage cell 9"
+    cell_voltage_10:
+      name: "${batt_4} voltage cell 10"
+    cell_voltage_11:
+      name: "${batt_4} voltage cell 11"
+    cell_voltage_12:
+      name: "${batt_3} voltage cell 12"
+    cell_voltage_13:
+      name: "${batt_3} voltage cell 13"
+    cell_voltage_14:
+      name: "${batt_4} voltage cell 14"
+    cell_voltage_15:
+      name: "${batt_4} voltage cell 15"
+    cell_voltage_16:
+      name: "${batt_4} voltage cell 16"
+    temperature_1:
+      name: "${batt_4} temperature 1"
+    temperature_2:
+      name: "${batt_4} temperature 2"
+    temperature_3:
+      name: "${batt_4} temperature 3"
+    temperature_4:
+      name: "${batt_4} temperature 4"
+    temperature_5:
+      name: "${batt_4} temperature environment"
+    temperature_6:
+      name: "${batt_4} temperature mosfet"
+    total_voltage:
+      name: "${batt_4} voltage total"
+      id: batt_4_voltage_total
+    current:
+      name: "${batt_4} current"
+      id: batt_4_current
+      filters: 
+        - multiply: 0.1 # Multiplication factor from RUIXU current to real current
+    power:
+      name: "${batt_4} power net"
+      id: batt_4_power_net
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    charging_power:
+      name: "${batt_4} power in"
+      id: batt_4_power_in
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    discharging_power:
+      name: "${batt_4} power out"
+      id: batt_4_power_out
+      filters: 
+        - multiply: 0.001 # Multiplication factor from W to kW is 0.001
+      unit_of_measurement: 'kW'
+      accuracy_decimals: 3
+    residual_capacity:
+      name: "${batt_4} remaining capacity"
+    battery_capacity:
+      name: "${batt_4} battery capacity"
+    state_of_charge:
+      name: "${batt_4} state of charge"
+    charging_cycles:
+      name: "${batt_4} charging cycles"
+    state_of_health:
+      name: "${batt_4} state of health"
+
+  #	end of file 
